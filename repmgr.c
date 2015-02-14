@@ -1348,15 +1348,7 @@ stop_backup:
 	if (flag_success)
 	{
 		log_notice("HINT: You can now start your postgresql server\n");
-		if (test_mode)
-		{
-			log_notice(_("for example : pg_ctl -D %s start\n"),
-					   local_data_directory);
-		}
-		else
-		{
-			log_notice("for example : /etc/init.d/postgresql start\n");
-		}
+		log_notice("for example : svcadm enable postgresql\n");
 	}
 	exit(r);
 }
@@ -1449,10 +1441,8 @@ do_standby_promote(void)
 	 * below will find an active server rather than one starting up.  This may
 	 * hang for up the default timeout (60 seconds).
 	 */
-	log_notice(_("%s: restarting server using %s/pg_ctl\n"), progname,
-			   options.pg_bindir);
-	maxlen_snprintf(script, "%s/pg_ctl %s -D %s -w -m fast restart",
-					options.pg_bindir, options.pgctl_options, data_dir);
+	log_notice(_("%s: restarting server using svcadm\n"), progname);
+	maxlen_snprintf(script, "/usr/sbin/svcadm -s disable postgresql && /usr/sbin/svcadm -s enable postgresql");
 	r = system(script);
 	if (r != 0)
 	{
@@ -1620,8 +1610,7 @@ do_standby_follow(void)
 		exit(ERR_BAD_CONFIG);
 
 	/* Finally, restart the service */
-	maxlen_snprintf(script, "%s/pg_ctl %s -w -D %s -m fast restart",
-					options.pg_bindir, options.pgctl_options, data_dir);
+	maxlen_snprintf(script, "/usr/sbin/svcadm disable -s postgresql && /usr/sbin/svcadm -s enable postgresql");
 	r = system(script);
 	if (r != 0)
 	{
@@ -1766,9 +1755,8 @@ do_witness_create(void)
 
 
 	/* start new instance */
-	sprintf(script, "%s/pg_ctl %s -w -D %s start", options.pg_bindir,
-			options.pgctl_options, runtime_options.dest_dir);
-	log_info(_("Start cluster for witness: %s"), script);
+	sprintf(script, "/usr/sbin/svcadm enable -s postgresql");
+	log_info(_("Start cluster for witness: %s\n"), script);
 	r = system(script);
 	if (r != 0)
 	{
@@ -1845,9 +1833,8 @@ do_witness_create(void)
 	}
 
 	/* reload to adapt for changed pg_hba.conf */
-	sprintf(script, "%s/pg_ctl %s -w -D %s reload", options.pg_bindir,
-			options.pgctl_options, runtime_options.dest_dir);
-	log_info(_("Reload cluster config for witness: %s"), script);
+	sprintf(script, "/usr/sbin/svcadm refresh postgresql");
+	log_info(_("Reload cluster config for witness: %s\n"), script);
 	r = system(script);
 	if (r != 0)
 	{
