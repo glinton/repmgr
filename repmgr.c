@@ -1442,7 +1442,7 @@ do_standby_promote(void)
 	 * hang for up the default timeout (60 seconds).
 	 */
 	log_notice(_("%s: restarting server using svcadm\n"), progname);
-	maxlen_snprintf(script, "/usr/sbin/svcadm -s disable postgresql && /usr/sbin/svcadm -s enable postgresql");
+	maxlen_snprintf(script, "/usr/sbin/svcadm disable -s postgresql && /usr/sbin/svcadm enable -s postgresql");
 	r = system(script);
 	if (r != 0)
 	{
@@ -1610,7 +1610,7 @@ do_standby_follow(void)
 		exit(ERR_BAD_CONFIG);
 
 	/* Finally, restart the service */
-	maxlen_snprintf(script, "/usr/sbin/svcadm disable -s postgresql && /usr/sbin/svcadm -s enable postgresql");
+	maxlen_snprintf(script, "/usr/sbin/svcadm disable -s postgresql && /usr/sbin/svcadm enable -s postgresql");
 	r = system(script);
 	if (r != 0)
 	{
@@ -1694,7 +1694,7 @@ do_witness_create(void)
 	/* Check this directory could be used as a PGDATA dir */
 	if (!create_pg_dir(runtime_options.dest_dir, runtime_options.force))
 	{
-		log_err(_("witness create: couldn't create data directory (\"%s\") for witness"),
+		log_err(_("witness create: couldn't create data directory (\"%s\") for witness\n"),
 				runtime_options.dest_dir);
 		exit(ERR_BAD_CONFIG);
 	}
@@ -1803,7 +1803,9 @@ do_witness_create(void)
 	sqlquery_snprintf(sqlquery, "SELECT name, setting "
 					  "  FROM pg_settings "
 					  " WHERE name IN ('hba_file')");
-	log_debug(_("witness create: %s"), sqlquery);
+
+	log_info("Get pg_hba full path.\n");
+	log_debug(_("witness create: %s\n"), sqlquery);
 	res = PQexec(masterconn, sqlquery);
 	if (PQresultStatus(res) != PGRES_TUPLES_OK)
 	{
@@ -1833,7 +1835,8 @@ do_witness_create(void)
 	}
 
 	/* reload to adapt for changed pg_hba.conf */
-	sprintf(script, "/usr/sbin/svcadm refresh postgresql");
+	sprintf(script, "%s/pg_ctl %s -w -D %s reload", options.pg_bindir,
+			options.pgctl_options, runtime_options.dest_dir);
 	log_info(_("Reload cluster config for witness: %s\n"), script);
 	r = system(script);
 	if (r != 0)
@@ -1849,7 +1852,8 @@ do_witness_create(void)
 					  repmgr_schema, options.node, options.cluster_name,
 					  options.node_name, options.conninfo, options.priority);
 
-	log_debug(_("witness create: %s"), sqlquery);
+	log_info("Register witness in master.\n");
+	log_debug(_("witness create: %s\n"), sqlquery);
 	res = PQexec(masterconn, sqlquery);
 	if (!res || PQresultStatus(res) != PGRES_COMMAND_OK)
 	{
@@ -1885,7 +1889,7 @@ do_witness_create(void)
 		sqlquery_snprintf(sqlquery, "ALTER ROLE %s NOSUPERUSER", runtime_options.username);
 		log_info("Drop superuser powers on user for witness db: %s.\n", sqlquery);
 
-		log_debug(_("witness create: %s"), sqlquery);
+		log_debug(_("witness create: %s\n"), sqlquery);
 		res = PQexec(witnessconn, sqlquery);
 		if (!res || PQresultStatus(res) != PGRES_COMMAND_OK)
 		{

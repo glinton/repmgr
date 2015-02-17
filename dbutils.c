@@ -84,7 +84,7 @@ is_standby(PGconn *conn)
 
 	if (res == NULL || PQresultStatus(res) != PGRES_TUPLES_OK)
 	{
-		log_err(_("Can't query server mode: %s"),
+		log_err(_("Can't query server mode: %s\n"),
 				PQerrorMessage(conn));
 		result = -1;
 	}

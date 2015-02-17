@@ -1498,7 +1498,7 @@ do_daemonize()
 			ret = chdir(path);
 			if (ret != 0)
 			{
-				log_err("Error changing directory to '%s': %s", path,
+				log_err("Error changing directory to '%s': %s\n", path,
 						strerror(errno));
 			}
 
